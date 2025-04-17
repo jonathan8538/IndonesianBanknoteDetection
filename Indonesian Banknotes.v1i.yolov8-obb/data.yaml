@@ -1,0 +1,6 @@
+train: D:/project/IndonesianBankNotesRecognition/Indonesian Banknotes.v1i.yolov8-obb/train/images
+val: D:/project/IndonesianBankNotesRecognition/Indonesian Banknotes.v1i.yolov8-obb/valid/images
+test: D:/project/IndonesianBankNotesRecognition/Indonesian Banknotes.v1i.yolov8-obb/test/images
+
+nc: 7 
+names: ["1000", "2000", "5000", "10000", "20000", "50000", "100000"]  
