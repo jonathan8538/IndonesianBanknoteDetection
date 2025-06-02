@@ -24,12 +24,23 @@
       text-shadow: 0 0 8px #00ffcc77;
     }
 
-    video {
-      border-radius: 12px;
-      box-shadow: 0 0 20px #00ffcc44;
-      margin-bottom: 15px;
+    .video-container {
+      position: relative;
       width: 640px;
       height: 480px;
+    }
+
+    #video, #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 640px;
+      height: 480px;
+      border-radius: 12px;
+    }
+
+    #canvas {
+      z-index: 10;
     }
 
     .btn-group {
@@ -56,11 +67,7 @@
       box-shadow: 0 0 10px #00ffcc88;
     }
 
-    button:active {
-      transform: scale(0.98);
-    }
-
-    canvas {
+    canvas#canvasInput {
       display: none;
     }
 
@@ -73,86 +80,134 @@
 </head>
 <body>
   <h1>Indonesian Banknote Detector</h1>
-  <video id="video" autoplay muted></video>
-  <canvas id="canvas" width="640" height="480"></canvas>
+
+  <div class="video-container">
+    <video id="video" autoplay muted></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+  </div>
+  <canvas id="canvasInput" width="640" height="480"></canvas>
 
   <div class="btn-group">
     <button onclick="start()">Start Detection</button>
     <button onclick="stop()">Stop</button>
   </div>
+
   <script>
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
-  let streaming = false;
-  let interval;
+    const labelMap = {
+      "1000": "seribu rupiah",
+      "2000": "dua ribu rupiah",
+      "5000": "lima ribu rupiah",
+      "10000": "sepuluh ribu rupiah",
+      "20000": "dua puluh ribu rupiah",
+      "50000": "lima puluh ribu rupiah",
+      "100000": "seratus ribu rupiah"
+    };
 
-  async function start() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    streaming = true;
-    interval = setInterval(capture, 1000); 
-  }
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const canvasInput = document.getElementById('canvasInput');
+    const ctxInput = canvasInput.getContext('2d');
 
-  function stop() {
-    streaming = false;
-    clearInterval(interval);
-    const tracks = video.srcObject?.getTracks();
-    tracks?.forEach(track => track.stop());
-    video.srcObject = null;
-  }
-
-  function capture() {
-    if (!streaming) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = canvas.toDataURL('image/jpeg');
-
-    fetch('http://localhost:8000/detect', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: imageData })
-    })
-    .then(res => res.blob())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      video.src = url;
-    });
-  }
-
-  function speak(text) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'id-ID';
-    utterance.pitch = 1;
-    utterance.rate = 1;
-    speechSynthesis.speak(utterance);
-  }
-
-  window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'id-ID';
-  recognition.continuous = true;
-  recognition.interimResults = false;
-
-  recognition.onresult = function(event) {
-    const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-    console.log("Voice:", transcript);
-
-    if (transcript.includes("mulai deteksi")) {
-      start();
-      speak("Deteksi dimulai.");
-    } else if (transcript.includes("stop deteksi")) {
-      stop();
-      speak("Deteksi dihentikan.");
+    let streaming = false;
+    let interval;
+    let lastSpokenLabel = null;
+    
+    async function start() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      streaming = true;
+      interval = setInterval(capture, 1000); 
     }
-  }
 
-  window.onload = () => {
-    setTimeout(() => {
-      speak("Selamat datang. Pilih salah satu: Buka Kamera, Mulai Deteksi, atau Stop Deteksi.");
-      recognition.start();
-    }, 500); 
-  };
-</script>
+    function stop() {
+      streaming = false;
+      clearInterval(interval);
+      const tracks = video.srcObject?.getTracks();
+      tracks?.forEach(track => track.stop());
+      video.srcObject = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
+    function capture() {
+      if (!streaming) return;
+
+      ctxInput.drawImage(video, 0, 0, canvasInput.width, canvasInput.height);
+      const imageData = canvasInput.toDataURL('image/jpeg');
+
+      fetch('http://localhost:8000/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Data dari backend:", data);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let spokenThisFrame = false;
+
+        data.detections.forEach(det => {
+          console.log("Deteksi:", det);
+
+          ctx.strokeStyle = '#00FF00';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(det.x, det.y, det.width, det.height);
+
+          ctx.font = '16px Arial';
+          ctx.fillStyle = '#00FF00';
+          ctx.fillText(`${det.label} (${Math.round(det.confidence * 100)}%)`, det.x, det.y - 5);
+
+         ]
+          const labelText = labelMap[det.label] || det.label;
+
+          
+          if (!spokenThisFrame && det.label !== lastSpokenLabel) {
+            speak(`Terdeteksi ${labelText}`);
+            lastSpokenLabel = det.label;
+            spokenThisFrame = true;
+          }
+        });
+      })
+      .catch(error => {
+        console.error("Gagal memanggil backend:", error);  
+      });
+
+
+    }
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'id-ID';
+      utterance.pitch = 1;
+      utterance.rate = 1;
+      speechSynthesis.speak(utterance);
+    }
+
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'id-ID';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+      console.log("Voice:", transcript);
+
+      if (transcript.includes("mulai deteksi")) {
+        start();
+        speak("Deteksi dimulai.");
+      } else if (transcript.includes("stop deteksi")) {
+        stop();
+        speak("Deteksi dihentikan.");
+      }
+    }
+
+    window.onload = () => {
+      setTimeout(() => {
+        speak("Selamat datang. Pilih salah satu: Mulai Deteksi, atau Stop Deteksi.");
+        recognition.start();
+      }, 500);
+    };
+  </script>
 </body>
 </html>
