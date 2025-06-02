@@ -10,7 +10,6 @@ import re
 from io import BytesIO
 
 model = YOLO('runs/detect/train/weights/best.pt')
-
 app = FastAPI()
 
 app.add_middleware(
@@ -33,7 +32,20 @@ async def detect(data: ImageData):
     img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
     results = model(img)[0]
-    annotated_img = results.plot() 
 
-    _, buffer = cv2.imencode('.jpg', annotated_img)
-    return StreamingResponse(BytesIO(buffer.tobytes()), media_type="image/jpeg")
+    detections = []
+    if results.boxes is not None:
+        for box in results.boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            label = model.names[int(box.cls[0])]
+            confidence = float(box.conf[0])
+            detections.append({
+                "x": x1,
+                "y": y1,
+                "width": x2 - x1,
+                "height": y2 - y1,
+                "label": label,
+                "confidence": confidence
+            })
+
+    return { "detections": detections }
