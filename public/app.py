@@ -9,7 +9,7 @@ import base64
 import re
 from io import BytesIO
 
-model = YOLO('runs/detect/train/weights/best.pt')
+model = YOLO('./best.pt')
 app = FastAPI()
 
 app.add_middleware(
