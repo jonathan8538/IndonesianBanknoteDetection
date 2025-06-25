@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Indonesian Banknote Detector</title>
+  <title>CashCall</title>
   <style>
     body {
       margin: 0;
@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <h1>Indonesian Banknote Detector</h1>
+  <h1>CashCall, an Indonesian BankNotes Detector</h1>
 
   <div class="video-container">
     <video id="video" autoplay muted></video>
@@ -117,7 +117,7 @@
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
       streaming = true;
-      interval = setInterval(capture, 1000); 
+      interval = setInterval(capture, 3000); #ubah waktu deteksi object dari model 
     }
 
     function stop() {
@@ -158,10 +158,8 @@
           ctx.fillStyle = '#00FF00';
           ctx.fillText(`${det.label} (${Math.round(det.confidence * 100)}%)`, det.x, det.y - 5);
 
-         ]
           const labelText = labelMap[det.label] || det.label;
 
-          
           if (!spokenThisFrame && det.label !== lastSpokenLabel) {
             speak(`Terdeteksi ${labelText}`);
             lastSpokenLabel = det.label;
