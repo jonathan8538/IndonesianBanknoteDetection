@@ -1,0 +1,14 @@
+Instruksi menjalankan aplikasi
+
+1) Simpan semua file dalam 1 folder
+2) Buka Command Prompt dengan path folder dimana file disimpan
+3) Jalankan command "uvicorn app:app --reload" untuk menjalankan sistem backend
+4) Jalankan command "code ." untuk membuka vsc dan pencet "live" di file html untuk melihat tampilan aplikasi
+
+Instruksi penggunaan aplikasi
+1)Suara perintah dari sistem akan berjalan dan pilih untuk ucapkan perintah "Mulai deteksi" atau "Stop Deteksi"
+2)Ucapkan perintah "Mulai deteksi" untuk memulai deteksi
+3)Setelah webcam terbuka dan tampilan webcam ditampilkan di canvas, tunjukkan uang kertas rupiah ke webcam dan pastikan terlihat di webcam
+4)Sistem akan mengeluarkan dan menggambarkan bounding box prediksi kelas denominasi mata uang rupiah dan mengeluarkan bacaan kelas uang rupiah tersebut
+5)Anda dapat menunjukkan uang kertas rupiah lainnya dan bila model memprediksi kelas yang berbeda, maka model akan membacakan bacaan kelas uang rupiah tersebut.
+6)Untuk menghentikan prediksi, anda dapat mengucapkan "Stop Deteksi" dan model akan menghentikan sistem dan menutup webcam.
